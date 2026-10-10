@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>dykDamiando - Dyktowanie do Excela</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 20px;
+      }
+      input {
+        width: 100%;
+        max-width: 400px;
+        padding: 8px;
+        font-size: 16px;
+        margin-bottom: 10px;
+      }
+      button {
+        padding: 10px 20px;
+        font-size: 16px;
+        background: #28a745;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #218838;
+      }
+      .result-box {
+        margin-top: 15px;
+        padding: 10px;
+        background: #f4f4f4;
+        border-radius: 5px;
+        max-width: 400px;
+      }
+      #status {
+        margin-left: 10px;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h3>Podyktuj tekst (np. "Mam dwa kartony i pięć sztuk"):</h3>
+    <input
+      type="text"
+      id="input"
+      placeholder="Nacisnij mikrofon na klawiaturze..."
+    />
+    <br />
+    <button id="send-btn">Wyslij do Excela</button>
+    <span id="status"></span>
+
+    <div class="result-box">
+      <p><strong>Oryginalny tekst:</strong> <span id="original-text"></span></p>
+      <p>
+        <strong>Tekst po zamianie słów na cyfry:</strong>
+        <span id="normalized-text" style="color: #555"></span>
+      </p>
+      <hr />
+      <div id="results-container"></div>
+    </div>
+  </body>
+  <script>
+    // ==========================================
+    // 1. POBIERANIE ELEMENTÓW INTERFEJSU DOM
+    // ==========================================
+    const input = document.querySelector("#input");
+    const originalText = document.querySelector("#original-text");
+    const normalizedTextSpan = document.querySelector("#normalized-text");
+    const resultsContainer = document.querySelector("#results-container");
+    const sendBtn = document.querySelector("#send-btn");
+    const statusSpan = document.querySelector("#status");
+
+    // ==========================================
+    // 2. SŁOWNIK MOWY - NORMALIZACJA SŁÓW NA CYFRY
+    // ==========================================
+    // Klawiatura w telefonie przy dyktowaniu pisze słowa (np. "dwa").
+    // Tutaj możesz bez problemu dopisywać kolejne słowne liczby w razie potrzeby.
+    const wordToNumberMap = {
+      zero: "0",
+      jeden: "1",
+      jedna: "1",
+      jednego: "1",
+      dwa: "2",
+      dwie: "2",
+      dwóch: "2",
+      trzy: "3",
+      trzech: "3",
+      cztery: "4",
+      czterech: "4",
+      pięć: "5",
+      piec: "5",
+      pięciu: "5",
+      sześć: "6",
+      szesc: "6",
+      sześciu: "6",
+      siedem: "7",
+      siedmiu: "7",
+      osiem: "8",
+      osmiu: "8",
+      dziewięć: "9",
+      dziewiec: "9",
+      dziewięciu: "9",
+      dziesięć: "10",
+      dziesiec: "10",
+      dziesięciu: "10",
+    };
+
+    // Funkcja przemiata tekst i podmienia słowa na cyfry na podstawie słownika powyżej
+    function convertWordsToNumbers(text) {
+      let cleanedText = text;
+
+      for (const [word, number] of Object.entries(wordToNumberMap)) {
+        // \b oznacza granica słowa, flaga 'i' ignoruje wielkość liter
+        const regex = new RegExp(`\\b${word}\\b`, "gi");
+        cleanedText = cleanedText.replace(regex, number);
+      }
+
+      return cleanedText;
+    }
+
+    // ==========================================
+    // 3. KONFIGURACJA REGUŁ WYSZUKIWANIA (REGEXP)
+    // ==========================================
+    // Chcesz dodać nową rzecz do szukania? Dopisujesz kolejny blok poniżej!
+    // \b(\d+) szuka liczby, \s* to opcjonalne spacje, a reszta to nazwa jednostki.
+    const searchRules = [
+      {
+        id: "cartons",
+        label: "Kartony",
+        regex: /\b(\d+)\s*(karton\w*)\b/gi,
+      },
+      {
+        id: "pieces",
+        label: "Sztuki",
+        regex: /\b(\d+)\s*(sztuk|szt\.?)\b/gi,
+      },
+      {
+        id: "weight",
+        label: "Waga (kg)",
+        regex: /\b(\d+)\s*(kg|kilogram\w*)\b/gi,
+      },
+    ];
+
+    // ==========================================
+    // 4. FUNKCJA AKTUALIZUJĄCA WIDOK NA ŻYWO
+    // ==========================================
+    function processInput() {
+      // Pobieramy surowy tekst wpisany/podyktowany przez użytkownika
+      const rawText = input.value;
+      originalText.textContent = rawText;
+
+      // Konwertujemy słowa na cyfry, żeby widzieć efekt normalizacji
+      const normalizedText = convertWordsToNumbers(rawText);
+      normalizedTextSpan.textContent = normalizedText;
+
+      // Czścimy sekcję wyników przed ponownym przeliczeniem
+      resultsContainer.innerHTML = "";
+
+      // Przechodzimy pętlą przez każdą zdefiniowaną wyżej regułę
+      searchRules.forEach((rule) => {
+        const matches = [...normalizedText.matchAll(rule.regex)];
+        const ruleParagraph = document.createElement("p");
+
+        if (matches.length > 0) {
+          // Wyciągamy same cyfry (grupa numer 1 w nawiasie regexa)
+          const values = matches.map((m) => m[1]);
+          ruleParagraph.innerHTML = `<strong>${rule.label}:</strong> ${values.join(", ")}`;
+          ruleParagraph.style.color = "green";
+        } else {
+          ruleParagraph.innerHTML = `<strong>${rule.label}:</strong> Brak`;
+          ruleParagraph.style.color = "#888";
+        }
+        resultsContainer.appendChild(ruleParagraph);
+      });
+    }
+
+    // Nasłuchiwacz zdarzeń reagujący na każde słowo wpisane lub podyktowane
+    input.addEventListener("input", processInput);
+
+    // ==========================================
+    // 5. OBSŁUGA WYSYŁANIA DANYCH DO WEBHOOKA
+    // ==========================================
+    sendBtn.addEventListener("click", async () => {
+      // trim() usuwa zbędne spacje z brzegów tekstu
+      const textValue = input.value.trim();
+
+      // Zabezpieczenie przed wysłaniem pustego pola
+      if (!textValue) {
+        statusSpan.textContent = "Najpierw podyktuj tekst!";
+        statusSpan.style.color = "red";
+        return;
+      }
+
+      const normalizedText = convertWordsToNumbers(textValue);
+
+      // Przygotowujemy tablicę obiektów, która trafi do Iteratora w Make.com
+      // Dzięki temu każdy element wyląduje w Excelu w osobnym wierszu.
+      const itemsList = [];
+
+      searchRules.forEach((rule) => {
+        const matches = [...normalizedText.matchAll(rule.regex)];
+
+        matches.forEach((match) => {
+          itemsList.push({
+            category: rule.label,
+            value: match[1],
+          });
+        });
+      });
+
+      // Główny obiekt wysyłany jako JSON do Make.com
+      const payloadData = {
+        fullText: textValue,
+        normalizedText: normalizedText,
+        items: itemsList,
+        timestamp: new Date().toISOString(),
+      };
+
+      // Blokujemy przycisk na czas wysyłania i informujemy użytkownika
+      statusSpan.textContent = "Wysyłanie...";
+      statusSpan.style.color = "orange";
+      sendBtn.disabled = true;
+
+      try {
+        // TUTAJ WKLEJ SWÓJ ADRES WEBHOOKA Z MAKE.COM
+        const webhookUrl =
+          "https://hook.eu1.make.com/zsp6anh2y2h1m4erviyw6wackqotgyjs";
+
+        const response = await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payloadData),
+        });
+
+        if (response.ok) {
+          statusSpan.textContent = "Wysłano pomyślnie do Excela!";
+          statusSpan.style.color = "green";
+        } else {
+          throw new Error("Serwer odrzucił żądanie");
+        }
+      } catch (error) {
+        console.error("Błąd wysyłania:", error);
+        statusSpan.textContent = "Błąd wysyłania!";
+        statusSpan.style.color = "red";
+      } finally {
+        // Niezależnie od wyniku przywracamy gotowość przycisku
+        sendBtn.disabled = false;
+      }
+    });
+  </script>
+</html>
