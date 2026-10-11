@@ -80,9 +80,38 @@
     // Tutaj możesz bez problemu dopisywać kolejne słowne liczby w razie potrzeby.
     const wordToNumberMap = {
       zero: "0",
+      // Mianownik (kto? co?)
       jeden: "1",
       jedna: "1",
+      jedno: "1",
+
+      // Dopełniacz (kogo? czego?)
       jednego: "1",
+      jednej: "1",
+
+      // Celownik (komu? czemu?)
+      jednemu: "1",
+
+      // Narzędnik i Miejscownik (z kim? z czym? o kim? o czym?)
+      jednym: "1",
+
+      // Biernik (kogo? co?) / Narzędnik żeński
+      jedną: "1",
+
+      // Warianty bez polskich znaków i potoczne końcówki
+      jedna: "1",
+      jednym: "1",
+      jedne: "1",
+      jedny: "1",
+      jednom: "1",
+
+      // Klasyczne literówki i chochliki ze STT (Speech-to-Text)
+      jden: "1",
+      jdna: "1",
+      jdno: "1",
+      jedin: "1",
+      jednem: "1",
+      jedn: "1",
       dwa: "2",
       dwie: "2",
       dwóch: "2",
@@ -128,6 +157,14 @@
     // \b(\d+) szuka liczby, \s* to opcjonalne spacje, a reszta to nazwa jednostki.
     const searchRules = [
       {
+        id: "test",
+        label: "testL",
+        regex: /\d+ kot\p{L}*/giu,
+        // \p{L}*      - dopasowuje zero lub więcej dowolnych liter z całego świata (Unicode),
+        // u (unicode) - włącza tryb Unicode wymagany do poprawnej obsługi \p{L}
+      },
+      /*
+      {
         id: "cartons",
         label: "Kartony",
         regex: /\b(\d+)\s*(karton\w*)\b/gi,
@@ -142,6 +179,7 @@
         label: "Waga (kg)",
         regex: /\b(\d+)\s*(kg|kilogram\w*)\b/gi,
       },
+      */
     ];
 
     // ==========================================
@@ -154,7 +192,7 @@
 
       // Konwertujemy słowa na cyfry, żeby widzieć efekt normalizacji
       const normalizedText = convertWordsToNumbers(rawText);
-      normalizedTextSpan.textContent = normalizedText;
+      // normalizedTextSpan.textContent = normalizedText;
 
       // Czścimy sekcję wyników przed ponownym przeliczeniem
       resultsContainer.innerHTML = "";
@@ -162,18 +200,30 @@
       // Przechodzimy pętlą przez każdą zdefiniowaną wyżej regułę
       searchRules.forEach((rule) => {
         const matches = [...normalizedText.matchAll(rule.regex)];
-        const ruleParagraph = document.createElement("p");
+
+        // console.log(matches);
+
+        matches.forEach((el) => {
+          console.log(el);
+          const paragraph = document.createElement("p");
+          resultsContainer.appendChild(paragraph);
+          paragraph.innerHTML = `<strong>${el[0]}:</strong> `;
+          paragraph.style.color = "green";
+        });
+
+        // const ruleParagraph = document.createElement("p");
 
         if (matches.length > 0) {
           // Wyciągamy same cyfry (grupa numer 1 w nawiasie regexa)
-          const values = matches.map((m) => m[1]);
-          ruleParagraph.innerHTML = `<strong>${rule.label}:</strong> ${values.join(", ")}`;
-          ruleParagraph.style.color = "green";
+          // const values = matches.map((m) => m[1]);
+          // ruleParagraph.innerHTML = `<strong>${rule.label}:</strong> ${values.join(", ")}`;
+          // ruleParagraph.innerHTML = `<strong>${rule.label}:</strong> `;
+          // ruleParagraph.style.color = "green";
         } else {
-          ruleParagraph.innerHTML = `<strong>${rule.label}:</strong> Brak`;
-          ruleParagraph.style.color = "#888";
+          // ruleParagraph.innerHTML = `<strong>${rule.label}:</strong> Brak`;
+          // ruleParagraph.style.color = "#888";
         }
-        resultsContainer.appendChild(ruleParagraph);
+        // resultsContainer.appendChild(ruleParagraph);
       });
     }
 
